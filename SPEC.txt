@@ -1,0 +1,28 @@
+SYSTEM NAME: HTML Deck Generator
+
+INPUTS
+- notes: string
+- slideCount: number
+- theme: dark | light
+
+OUTPUT
+- One self-contained HTML file
+- No external assets
+- CSS in <style>
+- JS in <script>
+
+REQUIRED FEATURES
+- Fullscreen friendly layout
+- Left/right arrow navigation
+- Slide counter top-right (x/y)
+- Minimal text per slide
+- Visual-first design (diagrams, big numbers, layouts made in HTML/CSS)
+
+FORBIDDEN
+- Multiple files
+- External libraries
+- CDN dependencies
+- Images unless embedded as data URLs
+
+ERROR HANDLING
+- If AI fails, return a readable error to the UI

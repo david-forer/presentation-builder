@@ -1,0 +1,405 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{{TITLE}}</title>
+  {{FONT_IMPORTS}}
+  <style>
+    :root {
+      {{CSS_VARIABLES}}
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: var(--body-font), system-ui, -apple-system, sans-serif;
+      background: var(--bg);
+      color: var(--fg);
+      overflow: hidden;
+    }
+
+    /* === MAIN LAYOUT: SLIDE LEFT, GAP, NOTES RIGHT === */
+    .layout {
+      display: flex;
+      width: 100vw;
+      height: 100vh;
+      background: #0a0a14; /* Dark gap color */
+    }
+
+    /* === SLIDE AREA (LEFT) === */
+    .slide-area {
+      flex: 1;
+      position: relative;
+      height: 100vh;
+      background: var(--bg);
+      margin-right: 20px; /* Gap for screen recording crop line */
+    }
+
+    /* === NOTES PANEL (RIGHT 15%) === */
+    .notes-panel {
+      flex: 0 0 15%;
+      height: 100vh;
+      background: var(--card-bg);
+      padding: 20px;
+      overflow-y: auto;
+    }
+
+    .notes-panel h4 {
+      color: var(--accent);
+      font-size: 16px;
+      margin-bottom: 15px;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+
+    .notes-panel p {
+      font-size: 16px;
+      line-height: 1.6;
+      color: var(--fg);
+    }
+
+    /* === SLIDES === */
+    .slide {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      display: none;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      padding: 60px;
+      text-align: center;
+    }
+
+    .slide.active {
+      display: flex;
+    }
+
+    .slide h1 { font-size: 64px; font-weight: bold; margin-bottom: 30px; line-height: 1.1; font-family: var(--heading-font), system-ui, sans-serif; }
+    .slide h2 { font-size: 48px; font-weight: bold; margin-bottom: 30px; line-height: 1.1; font-family: var(--heading-font), system-ui, sans-serif; }
+    .slide h3 { font-size: 40px; font-weight: bold; margin-bottom: 20px; color: var(--accent); font-family: var(--heading-font), system-ui, sans-serif; }
+    .slide p { font-size: 24px; line-height: 1.4; margin-bottom: 15px; }
+    .slide .subtitle { font-size: 28px; color: var(--muted); margin-top: 15px; }
+    .accent { color: var(--accent); }
+
+    /* === SLIDE ANIMATIONS === */
+    @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+    @keyframes scaleIn { from { opacity: 0; transform: scale(0.9); } to { opacity: 1; transform: scale(1); } }
+    @keyframes slideUp { from { opacity: 0; transform: translateY(40px); } to { opacity: 1; transform: translateY(0); } }
+
+    .slide[data-transition="fade"].active { animation: fadeIn 0.4s ease; }
+    .slide[data-transition="scale"].active { animation: scaleIn 0.5s ease; }
+    .slide[data-transition="slide-up"].active { animation: slideUp 0.5s ease; }
+    .slide[data-transition="stagger"].active .stagger-item {
+      animation: slideUp 0.4s ease backwards;
+      animation-delay: calc(var(--i) * 0.1s);
+    }
+
+    /* === SLIDE COUNTER === */
+    .slide-counter {
+      position: absolute;
+      top: 20px;
+      right: 20px;
+      font-size: 14px;
+      color: var(--muted);
+      z-index: 100;
+    }
+
+    /* === KEYBOARD HINTS === */
+    .keyboard-hints {
+      position: absolute;
+      bottom: 20px;
+      right: 20px;
+      display: flex;
+      gap: 6px;
+      z-index: 100;
+    }
+    .hint {
+      background: var(--card-bg);
+      color: var(--muted);
+      padding: 6px 10px;
+      border-radius: 4px;
+      font-size: 12px;
+      font-family: monospace;
+      cursor: pointer;
+      transition: all 0.2s;
+      border: none;
+    }
+    .hint:hover {
+      color: var(--accent);
+    }
+
+    /* === CHAPTER SIDEBAR (SMALL OVERLAY) === */
+    .chapter-nav {
+      position: absolute;
+      top: 0;
+      left: 0;
+      height: 100%;
+      z-index: 1000;
+    }
+
+    .nav-toggle {
+      position: absolute;
+      top: 20px;
+      left: 20px;
+      background: var(--card-bg);
+      border: none;
+      color: var(--fg);
+      font-size: 18px;
+      padding: 10px 14px;
+      border-radius: 6px;
+      cursor: pointer;
+      z-index: 1001;
+      transition: all 0.2s;
+    }
+    .nav-toggle:hover { background: var(--accent); color: var(--bg); }
+
+    .nav-content {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 220px;
+      height: 100%;
+      background: var(--bg);
+      padding: 70px 15px 20px;
+      transform: translateX(-100%);
+      transition: transform 0.2s ease;
+      overflow-y: auto;
+    }
+
+    .chapter-nav.open .nav-content { transform: translateX(0); }
+    .chapter-nav.open .nav-toggle { left: 235px; }
+
+    .nav-content h3 {
+      font-size: 14px;
+      margin-bottom: 15px;
+      color: var(--accent);
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+
+    .chapter-list { list-style: none; }
+    .chapter-list li {
+      padding: 10px 12px;
+      margin-bottom: 5px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 13px;
+      transition: all 0.2s;
+      color: var(--fg);
+    }
+    .chapter-list li:hover { background: var(--card-bg); }
+    .chapter-list li.active {
+      background: var(--accent);
+      color: var(--bg);
+      font-weight: bold;
+    }
+
+    /* === COMPONENT PATTERNS === */
+    .stat-card { text-align: center; padding: 30px; }
+    .stat-number { font-size: 80px; font-weight: bold; color: var(--accent); display: block; }
+    .stat-label { font-size: 20px; color: var(--muted); }
+
+    .comparison { display: grid; grid-template-columns: 1fr 1fr; gap: 40px; max-width: 900px; }
+    .compare-card { background: var(--card-bg); padding: 40px 30px; border-radius: 12px; text-align: center; }
+    .compare-card.negative { border-top: 4px solid #ff4757; }
+    .compare-card.positive { border-top: 4px solid #2ed573; }
+    .compare-card h4 { font-size: 28px; margin-bottom: 15px; }
+
+    .feature-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 30px; max-width: 1000px; }
+    .feature-card { background: var(--card-bg); padding: 30px 20px; border-radius: 12px; text-align: center; }
+    .feature-card h4 { font-size: 22px; margin: 15px 0; color: var(--accent); }
+    .feature-card p { font-size: 16px; }
+
+    .flow { display: flex; align-items: center; gap: 30px; max-width: 1000px; flex-wrap: wrap; justify-content: center; }
+    .flow-step { background: var(--card-bg); padding: 30px 20px; border-radius: 12px; font-size: 20px; font-weight: bold; min-width: 160px; border: 2px solid var(--accent); }
+    .flow-arrow { font-size: 36px; color: var(--accent); }
+
+    .quote { max-width: 800px; text-align: center; }
+    .quote-mark { font-size: 100px; color: var(--accent); line-height: 0.5; }
+    .quote p { font-size: 30px; font-style: italic; margin: 15px 0; }
+    .quote cite { font-size: 20px; color: var(--muted); }
+
+    .timeline { display: flex; flex-direction: column; gap: 20px; max-width: 700px; }
+    .timeline-item { display: flex; gap: 20px; align-items: center; }
+    .timeline-date { background: var(--accent); color: var(--bg); padding: 12px 20px; border-radius: 6px; font-weight: bold; min-width: 120px; text-align: center; }
+    .timeline-event { font-size: 20px; }
+
+    .logo-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px; max-width: 700px; }
+    .logo-item { background: var(--card-bg); padding: 20px; border-radius: 12px; text-align: center; font-weight: bold; }
+
+    .metric-bar { background: var(--card-bg); border-radius: 12px; padding: 15px; position: relative; min-width: 350px; }
+    .metric-fill { background: var(--accent); height: 16px; border-radius: 8px; }
+    .metric-label { display: block; margin-top: 10px; text-align: center; }
+
+    .big-statement { font-size: 52px; font-weight: bold; line-height: 1.2; max-width: 900px; }
+
+    .principles { display: grid; grid-template-columns: repeat(3, 1fr); gap: 40px; max-width: 1000px; }
+    .principle { text-align: center; }
+    .principle h4 { font-size: 28px; color: var(--accent); margin-bottom: 15px; }
+    .principle p { font-size: 18px; color: var(--muted); }
+
+    .stack-diagram { display: flex; flex-direction: column; gap: 20px; max-width: 700px; }
+    .stack-layer { background: var(--card-bg); padding: 20px 30px; border-radius: 12px; border-left: 5px solid var(--accent); }
+    .stack-layer h4 { font-size: 20px; color: var(--accent); margin-bottom: 10px; }
+
+    .problem-grid { display: flex; flex-direction: column; gap: 20px; max-width: 700px; }
+    .problem-item { background: var(--card-bg); padding: 30px; border-radius: 12px; border-left: 4px solid var(--accent); }
+
+    /* === PRESET OVERRIDES === */
+    {{PRESET_CSS}}
+  </style>
+</head>
+<body data-preset="{{PRESET_NAME}}">
+  <div class="layout">
+    <!-- SLIDE AREA (LEFT 75%) -->
+    <div class="slide-area">
+      <!-- Slide Counter -->
+      <div class="slide-counter">
+        <span id="currentSlide">1</span> / <span id="totalSlides">1</span>
+      </div>
+
+      <!-- Chapter Sidebar -->
+      <nav class="chapter-nav" id="chapterNav">
+        <button class="nav-toggle" id="navToggle">☰</button>
+        <div class="nav-content">
+          <h3>Chapters</h3>
+          <ul class="chapter-list" id="chapterList"></ul>
+        </div>
+      </nav>
+
+      <!-- Keyboard Hints -->
+      <div class="keyboard-hints">
+        <button class="hint" id="hintPrev" title="Previous slide">&lt;</button>
+        <button class="hint" id="hintNext" title="Next slide">&gt;</button>
+        <button class="hint" id="hintFull" title="Fullscreen">F</button>
+      </div>
+
+      <!-- SLIDES INJECTED HERE -->
+{{SLIDES}}
+    </div>
+
+    <!-- NOTES PANEL (RIGHT 25%) -->
+    <div class="notes-panel">
+      <h4>Speaker Notes</h4>
+      <p id="notesText">No notes for this slide.</p>
+    </div>
+  </div>
+
+  <script>
+    // === STATE ===
+    let currentSlide = 0;
+    const slides = document.querySelectorAll('.slide');
+    const totalSlides = slides.length;
+
+    // === DOM ELEMENTS ===
+    const chapterNav = document.getElementById('chapterNav');
+    const chapterList = document.getElementById('chapterList');
+    const notesText = document.getElementById('notesText');
+    const currentSlideEl = document.getElementById('currentSlide');
+    const totalSlidesEl = document.getElementById('totalSlides');
+
+    // === INITIALIZE ===
+    totalSlidesEl.textContent = totalSlides;
+    buildChapterList();
+    showSlide(0);
+
+    // === BUILD CHAPTER LIST FROM SLIDES ===
+    function buildChapterList() {
+      slides.forEach((slide, i) => {
+        const chapter = slide.dataset.chapter || `Slide ${i + 1}`;
+        const li = document.createElement('li');
+        li.textContent = `${i + 1}. ${chapter}`;
+        li.dataset.slide = i;
+        li.addEventListener('click', () => goToSlide(i));
+        chapterList.appendChild(li);
+      });
+    }
+
+    // === SLIDE NAVIGATION ===
+    function showSlide(index) {
+      slides.forEach((s, i) => s.classList.toggle('active', i === index));
+
+      // Update chapter list active state
+      document.querySelectorAll('.chapter-list li').forEach((li, i) => {
+        li.classList.toggle('active', i === index);
+      });
+
+      currentSlideEl.textContent = index + 1;
+      updateNotes(index);
+    }
+
+    function nextSlide() {
+      if (currentSlide < totalSlides - 1) {
+        currentSlide++;
+        showSlide(currentSlide);
+      }
+    }
+
+    function prevSlide() {
+      if (currentSlide > 0) {
+        currentSlide--;
+        showSlide(currentSlide);
+      }
+    }
+
+    function goToSlide(index) {
+      if (index >= 0 && index < totalSlides) {
+        currentSlide = index;
+        showSlide(currentSlide);
+      }
+    }
+
+    // === NOTES ===
+    function updateNotes(index) {
+      const slide = slides[index];
+      const notes = slide.dataset.notes || 'No notes for this slide.';
+      notesText.textContent = notes;
+    }
+
+    // === SIDEBAR ===
+    function toggleNav() {
+      chapterNav.classList.toggle('open');
+    }
+
+    // === FULLSCREEN ===
+    function toggleFullscreen() {
+      if (document.fullscreenElement) {
+        document.exitFullscreen();
+      } else {
+        document.documentElement.requestFullscreen();
+      }
+    }
+
+    // === KEYBOARD EVENTS ===
+    document.addEventListener('keydown', (e) => {
+      switch(e.key) {
+        case 'ArrowRight':
+        case ' ':
+          e.preventDefault();
+          nextSlide();
+          break;
+        case 'ArrowLeft':
+          prevSlide();
+          break;
+        case 'f':
+        case 'F':
+          toggleFullscreen();
+          break;
+        case 'Escape':
+          chapterNav.classList.remove('open');
+          break;
+      }
+    });
+
+    // === CLICK EVENTS ===
+    document.getElementById('navToggle').addEventListener('click', toggleNav);
+    document.getElementById('hintPrev').addEventListener('click', prevSlide);
+    document.getElementById('hintNext').addEventListener('click', nextSlide);
+    document.getElementById('hintFull').addEventListener('click', toggleFullscreen);
+  </script>
+</body>
+</html>

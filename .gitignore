@@ -1,0 +1,30 @@
+# Environment variables (contains secrets)
+.env
+
+# Dependencies
+node_modules/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Editor files
+.vscode/
+.idea/
+
+# Extracted skill files (optional - remove if you want to include)
+pitch-deck-builder/
+
+# Archive files
+*.skill
+
+# Electron build output
+dist/
+
+# App icons (generate locally, don't commit)
+icons/
+
+# Local only
+CLAUDE.md
+output/
+nul

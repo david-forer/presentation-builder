@@ -1,0 +1,502 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Presentation Builder</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: #0f0f1a;
+      color: #e0e0e0;
+      min-height: 100vh;
+      display: flex;
+    }
+
+    .sidebar {
+      width: 360px;
+      padding: 24px;
+      background: #1a1a2e;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+      overflow-y: auto;
+      max-height: 100vh;
+    }
+
+    h1 {
+      font-size: 1.5rem;
+      color: #fff;
+    }
+
+    h3 {
+      font-size: 0.95rem;
+      color: #888;
+      margin-bottom: 8px;
+    }
+
+    label {
+      display: block;
+      font-size: 0.85rem;
+      color: #888;
+      margin-bottom: 6px;
+    }
+
+    textarea {
+      width: 100%;
+      height: 180px;
+      padding: 12px;
+      border: 1px solid #333;
+      border-radius: 8px;
+      background: #0f0f1a;
+      color: #e0e0e0;
+      font-size: 0.95rem;
+      resize: vertical;
+    }
+
+    textarea:focus {
+      outline: none;
+      border-color: #4fc3f7;
+    }
+
+    .row {
+      display: flex;
+      gap: 16px;
+    }
+
+    .field {
+      flex: 1;
+    }
+
+    select {
+      width: 100%;
+      padding: 10px 12px;
+      border: 1px solid #333;
+      border-radius: 8px;
+      background: #0f0f1a;
+      color: #e0e0e0;
+      font-size: 0.95rem;
+      cursor: pointer;
+    }
+
+    select:focus {
+      outline: none;
+      border-color: #4fc3f7;
+    }
+
+    button {
+      padding: 14px 24px;
+      border: none;
+      border-radius: 8px;
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .btn-primary {
+      background: #4fc3f7;
+      color: #0f0f1a;
+    }
+
+    .btn-primary:hover {
+      background: #81d4fa;
+    }
+
+    .btn-primary:disabled {
+      background: #333;
+      color: #666;
+      cursor: not-allowed;
+    }
+
+    .btn-secondary {
+      background: transparent;
+      border: 1px solid #4fc3f7;
+      color: #4fc3f7;
+    }
+
+    .btn-secondary:hover {
+      background: rgba(79, 195, 247, 0.1);
+    }
+
+    .btn-secondary:disabled {
+      border-color: #333;
+      color: #666;
+      cursor: not-allowed;
+    }
+
+    .preview-area {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      padding: 24px;
+      gap: 16px;
+    }
+
+    .preview-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .preview-header h2 {
+      font-size: 1.1rem;
+      color: #888;
+    }
+
+    .preview-frame {
+      flex: 1;
+      background: #1a1a2e;
+      border-radius: 12px;
+      overflow: hidden;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .preview-frame iframe {
+      width: 100%;
+      height: 100%;
+      border: none;
+    }
+
+    .placeholder {
+      color: #444;
+      text-align: center;
+    }
+
+    .placeholder p {
+      margin-top: 8px;
+      font-size: 0.9rem;
+    }
+
+    .status {
+      font-size: 0.85rem;
+      color: #888;
+      min-height: 20px;
+    }
+
+    .status.error {
+      color: #f44336;
+    }
+
+    .loading {
+      display: inline-block;
+      width: 16px;
+      height: 16px;
+      border: 2px solid #333;
+      border-top-color: #4fc3f7;
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+      margin-right: 8px;
+      vertical-align: middle;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    .history {
+      border-top: 1px solid #333;
+      padding-top: 16px;
+      margin-top: auto;
+    }
+
+    .history-list {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      max-height: 200px;
+      overflow-y: auto;
+    }
+
+    .history-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 12px;
+      background: #0f0f1a;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+
+    .history-item:hover {
+      background: #252540;
+    }
+
+    .history-item.active {
+      border: 1px solid #4fc3f7;
+    }
+
+    .history-info {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .history-title {
+      font-size: 0.9rem;
+      color: #e0e0e0;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .history-meta {
+      font-size: 0.75rem;
+      color: #666;
+    }
+
+    .history-delete {
+      padding: 4px 8px;
+      font-size: 0.75rem;
+      background: transparent;
+      border: 1px solid #444;
+      color: #888;
+      border-radius: 4px;
+    }
+
+    .history-delete:hover {
+      border-color: #f44336;
+      color: #f44336;
+    }
+
+    .empty-history {
+      color: #444;
+      font-size: 0.85rem;
+      text-align: center;
+      padding: 16px;
+    }
+  </style>
+</head>
+<body>
+  <aside class="sidebar">
+    <h1>Presentation Builder</h1>
+
+    <div>
+      <label for="notes">Paste your notes</label>
+      <textarea id="notes" placeholder="Enter your notes, transcript, or outline here..."></textarea>
+    </div>
+
+    <div class="row">
+      <div class="field">
+        <label for="slideCount">Slides</label>
+        <select id="slideCount">
+          <option value="3">3 slides</option>
+          <option value="5" selected>5 slides</option>
+          <option value="7">7 slides</option>
+          <option value="10">10 slides</option>
+          <option value="12">12 slides</option>
+          <option value="15">15 slides</option>
+        </select>
+      </div>
+      <div class="field">
+        <label for="preset">Style</label>
+        <select id="preset">
+          <option value="bold-signal">Loading...</option>
+        </select>
+      </div>
+    </div>
+
+    <button id="generateBtn" class="btn-primary">Generate Presentation</button>
+    <button id="downloadBtn" class="btn-secondary" disabled>Download HTML</button>
+
+    <p class="status" id="status"></p>
+
+    <div class="history">
+      <h3>Saved Presentations</h3>
+      <div class="history-list" id="historyList">
+        <div class="empty-history">No saved presentations yet</div>
+      </div>
+    </div>
+  </aside>
+
+  <main class="preview-area">
+    <div class="preview-header">
+      <h2>Preview</h2>
+    </div>
+    <div class="preview-frame" id="previewFrame">
+      <div class="placeholder">
+        <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="#333" stroke-width="1.5">
+          <rect x="2" y="3" width="20" height="14" rx="2"/>
+          <path d="M8 21h8M12 17v4"/>
+        </svg>
+        <p>Your presentation will appear here</p>
+      </div>
+    </div>
+  </main>
+
+  <script>
+    const notesEl = document.getElementById('notes');
+    const slideCountEl = document.getElementById('slideCount');
+    const presetEl = document.getElementById('preset');
+    const generateBtn = document.getElementById('generateBtn');
+    const downloadBtn = document.getElementById('downloadBtn');
+    const statusEl = document.getElementById('status');
+    const previewFrame = document.getElementById('previewFrame');
+    const historyList = document.getElementById('historyList');
+
+    let generatedHTML = null;
+    let currentFilename = null;
+
+    // Load presets and history on start
+    loadPresets();
+    renderHistory();
+
+    async function loadPresets() {
+      try {
+        const res = await fetch('/presets');
+        const presets = await res.json();
+        const dark = presets.filter(p => p.category === 'dark');
+        const light = presets.filter(p => p.category === 'light');
+        presetEl.innerHTML = '';
+        const darkGroup = document.createElement('optgroup');
+        darkGroup.label = 'Dark';
+        dark.forEach(p => {
+          const opt = document.createElement('option');
+          opt.value = p.key;
+          opt.textContent = p.name;
+          opt.title = p.description;
+          darkGroup.appendChild(opt);
+        });
+        const lightGroup = document.createElement('optgroup');
+        lightGroup.label = 'Light';
+        light.forEach(p => {
+          const opt = document.createElement('option');
+          opt.value = p.key;
+          opt.textContent = p.name;
+          opt.title = p.description;
+          lightGroup.appendChild(opt);
+        });
+        presetEl.appendChild(darkGroup);
+        presetEl.appendChild(lightGroup);
+      } catch (e) {
+        presetEl.innerHTML = '<option value="bold-signal">Bold Signal</option>';
+      }
+    }
+
+    generateBtn.addEventListener('click', async () => {
+      const notes = notesEl.value.trim();
+      if (!notes) {
+        setStatus('Please enter some notes', true);
+        return;
+      }
+
+      setStatus('Generating presentation...', false, true);
+      generateBtn.disabled = true;
+      downloadBtn.disabled = true;
+
+      try {
+        const res = await fetch('/generate', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            notes,
+            slideCount: parseInt(slideCountEl.value),
+            preset: presetEl.value
+          })
+        });
+
+        const data = await res.json();
+
+        if (!res.ok) {
+          throw new Error(data.error || 'Generation failed');
+        }
+
+        generatedHTML = data.html;
+        currentFilename = data.filename;
+        showPreview(generatedHTML);
+        downloadBtn.disabled = false;
+        renderHistory();
+
+        setStatus('Saved to output folder');
+      } catch (err) {
+        setStatus(err.message, true);
+      } finally {
+        generateBtn.disabled = false;
+      }
+    });
+
+    downloadBtn.addEventListener('click', () => {
+      if (!generatedHTML) return;
+      const name = currentFilename || 'presentation.html';
+      const blob = new Blob([generatedHTML], { type: 'text/html' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = name;
+      a.click();
+      URL.revokeObjectURL(url);
+    });
+
+    function showPreview(html) {
+      previewFrame.innerHTML = '';
+      const iframe = document.createElement('iframe');
+      iframe.sandbox = 'allow-scripts';
+      iframe.srcdoc = html;
+      previewFrame.appendChild(iframe);
+    }
+
+    function setStatus(msg, isError = false, isLoading = false) {
+      if (isLoading) {
+        statusEl.innerHTML = '<span class="loading"></span>' + escapeHtml(msg);
+      } else {
+        statusEl.textContent = msg;
+      }
+      statusEl.className = 'status' + (isError ? ' error' : '');
+    }
+
+    function escapeHtml(text) {
+      const div = document.createElement('div');
+      div.textContent = text;
+      return div.innerHTML;
+    }
+
+    // Fetch and preview a saved presentation by filename
+    async function loadPresentation(filename) {
+      try {
+        const res = await fetch('/output/' + encodeURIComponent(filename));
+        if (!res.ok) throw new Error('File not found');
+        generatedHTML = await res.text();
+        currentFilename = filename;
+        showPreview(generatedHTML);
+        downloadBtn.disabled = false;
+        setStatus('Loaded: ' + filename);
+        renderHistory();
+      } catch (err) {
+        setStatus(err.message, true);
+      }
+    }
+
+    // Fetch list of saved presentations from server and render
+    async function renderHistory() {
+      try {
+        const res = await fetch('/list');
+        const files = await res.json();
+        if (files.length === 0) {
+          historyList.innerHTML = '<div class="empty-history">No saved presentations yet</div>';
+          return;
+        }
+        historyList.innerHTML = files.map(item => {
+          const date = new Date(item.createdAt);
+          // Extract a readable title from the filename
+          const title = item.filename.replace(/_\d+slides_.*\.html$/, '').replace(/_/g, ' ') || 'Presentation';
+          const active = item.filename === currentFilename ? ' active' : '';
+          return `
+            <div class="history-item${active}">
+              <div class="history-info" onclick="loadPresentation('${escapeHtml(item.filename)}')">
+                <div class="history-title">${escapeHtml(title)}</div>
+                <div class="history-meta">${date.toLocaleDateString()}</div>
+              </div>
+            </div>
+          `;
+        }).join('');
+      } catch (e) {
+        historyList.innerHTML = '<div class="empty-history">Could not load history</div>';
+      }
+    }
+  </script>
+</body>
+</html>
